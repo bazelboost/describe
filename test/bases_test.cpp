@@ -7,6 +7,11 @@
 #include <boost/core/lightweight_test.hpp>
 #include <boost/core/lightweight_test_trait.hpp>
 
+#if defined(_MSC_VER) && _MSC_VER < 1900
+# pragma warning(disable: 4510) // default constructor could not be generated
+# pragma warning(disable: 4610) // struct can never be instantiated
+#endif
+
 struct X
 {
 };
@@ -56,6 +61,14 @@ int main() {}
 #else
 
 #include <boost/mp11.hpp>
+
+template<typename ...Bases>
+struct ZT: Bases...
+{
+    BOOST_DESCRIBE_CLASS(ZT, (Bases...), (), (), ());
+};
+
+using Z = ZT<X1, X2, X3>;
 
 int main()
 {
@@ -144,6 +157,21 @@ int main()
 
         BOOST_TEST_TRAIT_SAME( typename mp_at_c<L, 1>::type, V3 );
         BOOST_TEST_EQ( (mp_at_c<L, 1>::modifiers), mod_private | mod_virtual );
+    }
+
+    {
+        using L = describe_bases<Z, mod_any_access>;
+
+        BOOST_TEST_EQ( mp_size<L>::value, 3 );
+
+        BOOST_TEST_TRAIT_SAME( typename mp_at_c<L, 0>::type, X1 );
+        BOOST_TEST_EQ( (mp_at_c<L, 0>::modifiers), mod_public );
+
+        BOOST_TEST_TRAIT_SAME( typename mp_at_c<L, 1>::type, X2 );
+        BOOST_TEST_EQ( (mp_at_c<L, 1>::modifiers), mod_public );
+
+        BOOST_TEST_TRAIT_SAME( typename mp_at_c<L, 2>::type, X3 );
+        BOOST_TEST_EQ( (mp_at_c<L, 2>::modifiers), mod_public );
     }
 
     return boost::report_errors();
